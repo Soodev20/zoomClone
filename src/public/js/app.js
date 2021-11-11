@@ -1,39 +1,42 @@
-const socket = new WebSocket(`ws://${window.location.host}`);
-const messageList = document.querySelector("ul");
-const messageForm = document.querySelector("#message");
-const nickNameForm = document.querySelector("#nickName");
+const socket = io();
 
-socket.addEventListener("open", () => {
-  console.log("Connected to Server ✅");
-});
+const welcome = document. getElementById("welcome");
+const room = document.getElementById("room");
+const form = welcome.querySelector("form");
 
-socket.addEventListener("close", () => {
-  console.log("Disconnected from Server ❌");
-});
+let roomName;
 
-socket.addEventListener("message", (message) => {
-  const li = document.createElement("li");
-  li.innerText = message.data;
-  messageList.append(li);
-});
+room.hidden = true;
 
-function makeMessage(type, payload) {
-  const msg = { type, payload };
-  return JSON.stringify(msg);
+function backendDone(msg) {
+  console.log(`The backend says: ${msg}`)
 }
 
-function handleSubmit(event) {
+function addMessage(msg) {
+  const ul = room.querySelector("ul");
+  const li = document.createElement("li");
+
+  li.innerText = msg;
+  ul.appendChild(li);
+}
+
+function showRoom() {
+  welcome.hidden = true;
+  room.hidden = false;
+  const h3 = room.querySelector("h3");
+  h3.innerText = `Welcome to ${roomName}!`;
+}
+
+function handleRoomSubmit(event) {
   event.preventDefault();
-  const input = messageForm.querySelector("input");
-  socket.send(makeMessage("new_message", input.value));
+  const input = form.querySelector("input");
+  socket.emit("enter_room", input.value, showRoom);
+  roomName = input.value;
   input.value = "";
 }
 
-function handleNickNameSubmit(event) {
-  event.preventDefault();
-  const input = nickNameForm.querySelector("input");
-  socket.send(makeMessage("nickName", input.value));
-}
+form.addEventListener("submit", handleRoomSubmit);
 
-messageForm.addEventListener("submit", handleSubmit);
-nickNameForm.addEventListener("submit", handleNickNameSubmit);
+socket.on("welcome", () => {
+  addMessage("Someone Came in!");
+});
