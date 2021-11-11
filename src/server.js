@@ -1,6 +1,6 @@
 import http from "http";
-import express from "express";
 import SocketIO from "socket.io";
+import express from "express";
 
 const app = express();
 
@@ -12,32 +12,20 @@ app.use("/public", express.static(__dirname + "/public"));
 app.get("/", (req, res) => res.render("home"));
 app.get("/*", (req, res) => res.redirect("/"));
 
-const handleListen = () => console.log("Listening on ws://localhost:3000");
+const httpServer = http.createServer(app);
+const wsServer = SocketIO(httpServer);
 
-const server = http.createServer(app);
-const io = SocketIO(server);
+wsServer.on("connection", socket => {
+  socket.onAny((event) => {
+    console.log(`Socket event: ${event}`);
+  });
 
-// const sockets = [];
+  socket.on("enter_room", (roomName, done) => {
+    socket.join(roomName);
+    done();
+    socket.to(roomName).emit("welcome");
+  });
+});
 
-// wss.on("connection", (socket) => {
-//   sockets.push(socket);
-//   console.log("Connected to Browser ✅");
-
-//   socket["nickName"] = "Somebody";
-//   socket.on("close", () => console.log("Disconnected from the Browser ❌"));
-//   socket.on("message", (msg) => {
-//     const message = JSON.parse(msg);
-
-//     switch (message.type) {
-//       case "new_message":
-//         sockets.forEach(aSocket => aSocket.send(`${socket.nickName} : ${message.payload}`));
-//         break;
-//       case "nickName":
-//         socket["nickName"] = message.payload;
-//         break;
-//     }
-//   });
-// });
-
-server.listen(3000, handleListen);
-
+const handleListen = () => console.log("Listening on http://localhost:3000");
+httpServer.listen(3000, handleListen);
